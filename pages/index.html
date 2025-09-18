@@ -3,68 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>手寫字型產生器 by 字嗨</title>
+    <title>Hanzi Practice</title>
 	<link rel="stylesheet" href="style.css">
 </head>
 <body lang="zh-TW">
-	<div id="list-container">
-		<label for="listSelect">字表：</label>
-		<select id="listSelect"></select>
-		<span class="butt" id="canvasListButton">👓</span>
-		<span class="butt" id="findButton">🔍</span>
+  <header class="global-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1 class="app-title">Hanzi Practice</h1>
+        <div class="header-info">
+          <select id="listSelect" class="deck-selector"></select>
+        </div>
+      </div>
+      <div class="header-right">
+        <button id="canvasListButton" class="theme-toggle" title="列表">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+        </button>
+        <button id="settingButton" class="theme-toggle" title="設定">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+        <button id="btnTheme" class="theme-toggle" title="Toggle theme">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
     </div>
+  </header>
 
-    <div id="demo-container">
-		<span id="glyphName"></span>
-		<span id="charSeq"></span>
-		<span id="glyphNote"></span>
-		<span class="butt" id="prevButton">👈</span>
-		<span class="butt" id="nextButton">👉</span>
-    </div>
-	<div id="canvas-container">
-        <canvas id="gridCanvas" width="500" height="500"></canvas>
-        <canvas id="drawingCanvas" width="500" height="500"></canvas>
-    </div>
+  <div class="app">
+    <aside>
+      <div class="char-head">
+        <div class="big-char" id="charSeq">⏳</div>
+        <div>
+            <div class="pinyin" id="glyphName">Loading...</div>
+            <div id="glyphNote" style="font-size: 14px; color: var(--muted); margin-top: 8px;"></div>
+        </div>
+      </div>
 
-	<div id="slider-container">
+      <div class="stat-grid">
+        <div class="stat"><div class="label">Meaning</div><div class="value" id="meaning"></div></div>
+      </div>
+
+      <div class="btn-row">
+        <button id="btnStroke" title="Open a stroke order search" class="ghost">▶ Stroke order</button>
+        <button id="btnShuffle" class="ghost" title="Toggle shuffle order">🔀 Shuffle</button>
+        <button id="hintButton" class="ghost">💡 Hint</button>
+      </div>
+
+      <div id="slider-container">
 		<div id="brushSelector"></div><div id="pressureButton" class="off"></div>
-		<span class="butt use" id="penButton">🖌️</span><span class="butt" id="eraserButton">🚿</span>
 		<input id="lineWidthSlider" type="range" min="2" max="36" value="12" />
 		<label for="lineWidthSlider"><span id="lineWidthValue">12</span></label>
-	</div>
+	  </div>
 
-	<div id="button-container">
-		<span class="butt" id="clearButton">🚮</span>
-		<span class="butt" id="moveLeftButton">⬅️</span>
-		<span class="butt" id="moveRightButton">➡️</span>
-		<span class="butt" id="moveUpButton">⬆️</span>
-		<span class="butt" id="moveDownButton">⬇️</span>
-		<span class="butt" id="undoButton">↩️</span>
-    </div>
+    </aside>
 
-	<div id="navi-container">
-		<span class="butt" id="hintButton">💡</span>
-		<span class="butt" id="settingButton">⚙️</span>
-		<span id="spanDoneCount">-</span>
-		<span class="butt" id="downloadButton">💾</span>
-    </div>
-	<div id="progress-container">
-		<progress id="progress-bar" value="0" max="100"></progress>
-		<span id="progress-text">0%</span>
-	</div>
+    <main>
+      <div class="board-wrap" id="canvas-container">
+        <div class="grid-bg"></div>
+        <canvas id="gridCanvas" width="500" height="500"></canvas>
+        <canvas id="drawingCanvas" width="500" height="500"></canvas>
+      </div>
 
-	<div id="listup-container" class="dialog">
-		<div class="dialog-body">
-			<span id="closeListupButton" class="close">×</span>
-			<h2>字符列表</h2>
-			<div id="listup-body"></div>
+      <div class="toolbar">
+        <div class="left-tools">
+          <button id="undoButton"> Undo</button>
+          <button id="clearButton"> Clear</button>
+        </div>
+        <div class="right-tools">
+          <button id="prevButton">⏮ Prev </button>
+          <button id="nextButton">⏭ Next</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+	<div id="listup-container" class="char-modal hidden">
+		<div class="modal-content">
+            <div class="modal-header">
+                <h2>字符列表</h2>
+                <button id="closeListupButton" class="modal-close-btn">&times;</button>
+            </div>
+			<div id="listup-body" class="char-grid"></div>
 		</div>
 	</div>
 
-	<div id="hint-container" class="dialog">
-		<div class="dialog-body">
-			<span id="closeHintButton" class="close">×</span>
-			<h2>提示 Ver <span id="version"></span></h2>
+	<div id="hint-container" class="char-modal hidden">
+		<div class="modal-content">
+            <div class="modal-header">
+                <h2>提示 Ver <span id="version"></span></h2>
+                <button id="closeHintButton" class="modal-close-btn">&times;</button>
+            </div>
 			<ul id="hintContent">
 				<li>本工具由「<a href="https://zi-hi.com" target="_blank">字嗨！</a>」提供。</li>
 				<li>書寫的字表來自「<a href="https://justfont.com/jf7000" target="_blank">jf7000當務字集</a>」。</li>
@@ -82,10 +117,12 @@
 		</div>
 	</div>
 
-	<div id="settings-container" class="dialog">
-		<div class="dialog-body">
-			<span id="closeSettingsButton" class="close">×</span>
-			<h2 id="settings-title">設定</h2>
+	<div id="settings-container" class="char-modal hidden">
+		<div class="modal-content">
+			<div class="modal-header">
+                <h2 id="settings-title">設定</h2>
+                <button id="closeSettingsButton" class="modal-close-btn">&times;</button>
+            </div>
 			<span class="note" id="span-welcome">在開始書寫之前，先來設定一些基本資訊吧！這些設定值之後都能再更改。<br>提醒您，若您是在App內的瀏覽器開啟本頁，建議用系統瀏覽器開啟，避免資料遺失！</span>
 
 			<h3>字型英文名稱</h3>
@@ -146,10 +183,12 @@
 		</div>
 	</div>
 
-	<div id="download-container" class="dialog">
-		<div class="dialog-body">
-			<span id="closeDownloadButton" class="close">×</span>
-			<h2 id="settings-title">下載</h2>
+	<div id="download-container" class="char-modal hidden">
+		<div class="modal-content">
+			<div class="modal-header">
+                <h2 id="settings-title">下載</h2>
+                <button id="closeDownloadButton" class="modal-close-btn">&times;</button>
+            </div>
 
 			<h3>下載字型</h3>
 			<input id="saveAsTester" type="checkbox" />
@@ -171,16 +210,10 @@
 		</div>
 	</div>
 
-	<!-- <div id="ads-container" class="dialog">
-		<div class="dialog-body">
-			<span id="closeAdsButton" class="close">×</span>
-			<h2 id="settings-title">活動訊息</h2>
-
-			<a href="https://justfont.kktix.cc/events/justlive-sp-handwriting" target="_blank"><img src="https://scontent.ftpe7-2.fna.fbcdn.net/v/t51.82787-15/524334290_18517592050031652_4988924142853493161_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=127cfc&_nc_ohc=4_f30DCJ_y0Q7kNvwFkNbFE&_nc_oc=AdmSqGxScdADdQ1NmM4kvWbBBObR-SfccZmUwTCqwKu1DdOhvnRHH_y18zX1JxoD-DE&_nc_zt=23&_nc_ht=scontent.ftpe7-2.fna&_nc_gid=Cuq19om7GhnRY_sUL_tmEQ&oh=00_AfSf_pizGvvQljo3CRD_ihar0RFIUetYs1t1GuOX094dRw&oe=6888FE13" style="width: 320px" /></a><br>
-			歡迎<a href="https://justfont.kktix.cc/events/justlive-sp-handwriting" target="_blank">報名線上直播</a>，免費學習更多手寫字型製作訣竅與販售授權知識。
-			<p class="dummy"></p>
-		</div>
-	</div> -->
+    <div id="progress-container" style="display: none;">
+		<progress id="progress-bar" value="0" max="100"></progress>
+		<span id="progress-text">0%</span>
+	</div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 	<script src="https://opentype.js.org/dist/opentype.js"></script>
@@ -207,7 +240,30 @@
 	</script>
 
     <script src="pressure-drawing.js"></script>
-    <script src="cglyphlist.js"></script>
+    <script src="hsk-dictionary.js"></script>
     <script src="fontdrawer.js"></script>
+    <script>
+        const btnTheme = document.getElementById('btnTheme');
+        const currentTheme = localStorage.getItem('theme');
+
+        if (currentTheme === 'light') {
+            document.body.dataset.theme = 'light';
+        }
+
+        btnTheme.addEventListener('click', function () {
+            if (document.body.dataset.theme === 'light') {
+                delete document.body.dataset.theme;
+                localStorage.removeItem('theme');
+            } else {
+                document.body.dataset.theme = 'light';
+                localStorage.setItem('theme', 'light');
+            }
+            
+            // Refresh canvas to apply new theme colors
+            if (typeof initCanvas !== 'undefined' && document.getElementById('drawingCanvas')) {
+                initCanvas(document.getElementById('drawingCanvas'));
+            }
+        });
+    </script>
 </body>
 </html>

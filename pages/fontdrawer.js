@@ -6,8 +6,25 @@ const dbName = fdrawer.dbName || 'FontDrawerDB'; // 使用 fdrawer.dbName，如�
 const storeName = 'FontData';
 const events = [];
 
+// Initialize character data structures
+let glyphList = {};
+let glyphMap = {};
+
+// Character navigation variables
+let nowList = null;
+let nowGlyphIndex = null;
+let nowGlyph = null;
+
 let db;
 let settings = null;
+let showHint = false;
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
 
 const brushes = [];
 function addBrush(imgSrc) {
@@ -166,7 +183,6 @@ async function loadSettings() {
 		} 	
 	}
 
-	console.log('Settings loaded:', settings);
 
 	return settings;
 }
@@ -200,95 +216,37 @@ async function initCanvas(canvas) {
 	const gridXOff = (gridCanvas.width - emWidth) / 2;	// X 軸偏移量
 	const gridYOff = (gridCanvas.height - emHeight) / 2;	// X 軸偏移量
 
-	//const gridWidth = Math.round(gridCanvas.width / scale / 3);		// 每格寬度
-	//const gridHeight = Math.round(gridCanvas.height / scale / 3);	// 每格高度
-
-	gridCtx.strokeStyle = '#cccccc';
-	gridCtx.lineWidth = 1;
-
-	// 繪製格線
-	let lines = 1;
-
-	// 字身框
-	gridCtx.beginPath();
-	gridCtx.rect(gridXOff, gridYOff, emWidth, emHeight);
-	gridCtx.stroke();
-
-	if (settings.gridType == '3x3grid') lines = 3;
-	else if (settings.gridType == '3x3grid-new') lines = 4;
-	else if (settings.gridType == '2x2grid') lines = 2;
-	else if (settings.gridType == 'stargrid') lines = 2;
-
-	for (let i = 1; i < lines; i++) {
-		if (settings.gridType == '3x3grid-new' && i == 2) continue; // 跳過新 3x3 格線的中間線
-
-		gridCtx.beginPath();
-		gridCtx.moveTo(gridXOff + emWidth * i / lines, gridYOff);
-		gridCtx.lineTo(gridXOff + emWidth * i / lines, gridYOff + emHeight);
-		gridCtx.stroke();
-
-		gridCtx.beginPath();
-		gridCtx.moveTo(gridXOff, gridYOff + emHeight * i / lines);
-		gridCtx.lineTo(gridXOff + emWidth, gridYOff + emHeight * i / lines);
-		gridCtx.stroke();
-	}
-
-	if (settings.gridType == 'stargrid') {
-		gridCtx.beginPath();
-		gridCtx.moveTo(gridXOff, gridYOff);
-		gridCtx.lineTo(gridXOff + emWidth, gridYOff + emHeight);
-		gridCtx.stroke();
-		gridCtx.beginPath();
-		gridCtx.moveTo(gridXOff + emWidth, gridYOff);
-		gridCtx.lineTo(gridXOff, gridYOff + emHeight);
-		gridCtx.stroke();
-	} else if (settings.gridType == 'boxgrid') {
-		gridCtx.beginPath();
-		gridCtx.rect(gridXOff + emWidth*0.15, gridYOff + emHeight*0.15, emWidth*0.7, emHeight*0.7);
-		gridCtx.stroke();
-	}
-
-	if (settings.gridType == 'boxgrid' || settings.gridType == 'nogrid') {
-		let boxLen = 15;
-		gridCtx.beginPath();
-		gridCtx.moveTo(gridXOff - boxLen, gridYOff + emHeight * 0.5);
-		gridCtx.lineTo(gridXOff + boxLen, gridYOff + emHeight * 0.5);
-		gridCtx.stroke();
-		gridCtx.beginPath();
-		gridCtx.moveTo(gridXOff + emWidth - boxLen, gridYOff + emHeight * 0.5);
-		gridCtx.lineTo(gridXOff + emWidth + boxLen, gridYOff + emHeight * 0.5);
-		gridCtx.stroke();
-		gridCtx.beginPath();
-		gridCtx.moveTo(gridXOff + emWidth * 0.5, gridYOff - boxLen);
-		gridCtx.lineTo(gridXOff + emWidth * 0.5, gridYOff + boxLen);
-		gridCtx.stroke();
-		gridCtx.beginPath();
-		gridCtx.moveTo(gridXOff + emWidth * 0.5, gridYOff + emHeight - boxLen);
-		gridCtx.lineTo(gridXOff + emWidth * 0.5, gridYOff + emHeight + boxLen);
-		gridCtx.stroke();
-	}
-
-	// 繪製基線
-	gridCtx.strokeStyle = '#ee9999';	// 基線顏色
-	gridCtx.beginPath();
-	gridCtx.moveTo(0, gridYOff + emHeight*0.75);
-	gridCtx.lineTo(gridCanvas.width, gridYOff + emHeight*0.75);
-	gridCtx.stroke();
-
-	// 依照設定值顯示筆寬、筆刷、筆壓UI
-	$('#lineWidthSlider').val(settings.lineWidth);
+	
+	    if (showHint && nowGlyph && glyphMap[nowGlyph]) {
+	        gridCtx.save();
+	        const char = glyphMap[nowGlyph].c;
+	        const W = gridCanvas.width, H = gridCanvas.height;
+	        const pad = Math.min(W, H) * 0.12; // inner padding
+	        const size = Math.min(W, H) - pad * 2; // font size in pixels
+	        gridCtx.translate(W / 2, H / 2);
+	        gridCtx.fillStyle = '#ffffff';	// Brighter hint color
+	        gridCtx.font = `900 ${size}px "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", STHeiti, sans-serif`;
+	        gridCtx.textAlign = 'center';
+	        gridCtx.textBaseline = 'middle';
+	        gridCtx.globalAlpha = 0.15;
+	        gridCtx.fillText(char, 0, 0);
+	        gridCtx.restore();
+	    }
+	
+		// 依照設定值顯示筆寬、筆刷、筆壓UI	$('#lineWidthSlider').val(settings.lineWidth);
 	$('#lineWidthValue').text(settings.lineWidth);
-	$('#brushSelector').empty().append($(brushes[settings.brushType]));
 	$('#pressureButton').removeClass('on off').addClass(settings.pressureMode ? 'on' : 'off');
 }
 
 function initListSelect($listSelect) {
 	$listSelect.empty(); // 清空選單
-	for (var list in glyphList) {
-		$listSelect.append(
-			$('<option></option>').val(list).text(list)
-		);
-	}
+    if (window.CHARACTER_DECKS) {
+        for (const level in CHARACTER_DECKS) {
+            $listSelect.append(
+                $('<option></option>').val(level).text(level)
+            );
+        }
+    }
 }
 
 async function createFont(glyphs, gidMap, verts, ccmps) {
@@ -372,13 +330,74 @@ $(document).ready(async function () {
         console.log('IndexedDB 起動完成');
 		settings = await loadSettings();
 		initListSelect($listSelect);
-		initCanvas(canvas);	// 初始化九宮格底圖
-		$('#canvas-container').toggleClass('smallmode', settings.smallMode);
+				$('#canvas-container').toggleClass('smallmode', settings.smallMode);
+		
+				// Init brush selector
+				const $brushSelector = $('#brushSelector');
+				brushes.forEach((brush, index) => {
+					const $brushImg = $('<img>').attr('src', brush.src).attr('data-brush-index', index);
+					if (index === settings.brushType) {
+						$brushImg.addClass('selected');
+					}
+					$brushSelector.append($brushImg);
+				});
+		
+				$brushSelector.on('click', 'img', function() {
+					const brushIndex = $(this).data('brush-index');
+					settings.brushType = brushIndex;
+					updateSetting('brushType');
+					$brushSelector.find('img').removeClass('selected');
+					$(this).addClass('selected');
+				});
+		
+				$('#lineWidthSlider').on('input', function () {
+					settings.lineWidth = parseInt($(this).val(), 10);
+					$('#lineWidthValue').text(settings.lineWidth);
+					updateSetting('lineWidth'); // 儲存筆寬到 Local Storage
+				});
+		// Add event listener BEFORE loading HSK data
+        window.addEventListener('hskDataLoaded', (event) => {
+            const { level } = event.detail;
+            const deckName = `HSK ${level}`;
+            const hskDeck = CHARACTER_DECKS[deckName];
+            
+            if (hskDeck) {
+                const hskGlyphList = [];
+                hskDeck.forEach(entry => {
+                    const char = entry.char;
+                    const uni = char.codePointAt(0).toString(16).toUpperCase();
+                    const gname = uni.length <= 4 ? 'uni' + uni.padStart(4, '0') : 'u' + uni;
+                    hskGlyphList.push(gname);
+                    if (!glyphMap[gname]) {
+                        glyphMap[gname] = { c: char, w: 'F', n: entry.pinyin };
+                    }
+                });
+                glyphList[deckName] = hskGlyphList;
+                
+                // Update dropdown with new data
+                initListSelect($listSelect);
+                
+                // Set the dropdown to the current deck
+                $listSelect.val(deckName);
+                
+                // Set up the first character
+                nowList = hskGlyphList;
+                nowGlyphIndex = 0;
+                setGlyph(0);
+                
+                // Update reference implementation DECK
+                updateDeckFromHSK();
+            }
+        });
 
-		$listSelect.change(); // 觸發一次 change 事件以載入第一個列表
+        // Now load HSK data after event listener is set up
+        await window.loadHSKLevel(1);
 		
 		// 初始化筆壓繪圖狀態
 		await updatePressureDrawingStatus();
+		
+		// Initialize canvas
+		initCanvas(canvas);
 	
 		if (!settings.notNewFlag) {
 			$('#settingButton').click();
@@ -410,33 +429,58 @@ $(document).ready(async function () {
 		$('#pressureButton').toggle(!settings.oldPressureMode); 	// 如果舊筆壓繪圖啟用，則隱藏筆壓開關
 	}
 
-	let nowList = null;
-	let nowGlyphIndex = null;
-	let nowGlyph = null;
-
 	// 切換列表
-	$listSelect.on('change', function () {
+	$listSelect.on('change', async function () {
 		const selectedValue = $(this).val();
-		if (selectedValue) {
-			nowList = glyphList[selectedValue];
-			nowGlyphIndex = 0; // 重置當前字形索引
-			setGlyph(0);
-		}
+		if (selectedValue.startsWith('HSK')) {
+            const level = selectedValue.split(' ')[1];
+            await window.loadHSKLevel(parseInt(level));
+            // Update reference implementation DECK after loading new level
+            updateDeckFromHSK();
+        }
 	});	//.change(); // 觸發一次 change 事件以載入第一個列表
 
 	// 設定編輯中的字符
 	function setGlyph(index) {
-		if (!nowList) return;
+		if (!nowList) {
+			return;
+		}
 		if (index < 0) index = nowList.length - 1; // 如果索引小於0，則設為最後一個字符
 		if (index >= nowList.length) index = 0; // 如果索引大於字符數量，則設為第一個字符
 		nowGlyphIndex = index;
 		nowGlyph = nowList[index]; // 取得當前字符的名稱
+		
 	
-		$('#glyphName').text(nowGlyph); // 更新顯示的字符
+		// Show pinyin instead of glyph name in the blue rounded box
+        let pinyin = '';
+        if (window.CHARACTER_DECKS) {
+            for (const level in CHARACTER_DECKS) {
+                const deck = CHARACTER_DECKS[level];
+                const entry = deck.find(item => item.char === glyphMap[nowGlyph].c);
+                if (entry && entry.pinyin) {
+                    pinyin = entry.pinyin;
+                    break;
+                }
+            }
+        }
+		$('#glyphName').text(pinyin || nowGlyph); // Show pinyin or fallback to glyph name
 		$('#charSeq').text(glyphMap[nowGlyph].c).removeClass('vert');
 		if (glyphMap[nowGlyph].v && nowGlyph.indexOf('.vert') > 0) $('#charSeq').addClass('vert');
 
-		$('#glyphNote').text(glyphMap[nowGlyph].n || '');
+		$('#glyphNote').text(''); // Clear the note underneath
+
+        let meaning = '';
+        if (window.CHARACTER_DECKS) {
+            for (const level in CHARACTER_DECKS) {
+                const deck = CHARACTER_DECKS[level];
+                const entry = deck.find(item => item.char === glyphMap[nowGlyph].c);
+                if (entry) {
+                    meaning = entry.meaning;
+                    break;
+                }
+            }
+        }
+        $('#meaning').text(meaning);
 
 		// 載入之前的畫布內容
 		undoStack.length = 0; // 清空復原堆疊
@@ -497,67 +541,9 @@ $(document).ready(async function () {
 	$('#prevButton').on('click', function () { setGlyph(nowGlyphIndex - 1); }); // 切換到上一個字符
 	$('#nextButton').on('click', function () { setGlyph(nowGlyphIndex + 1); }); // 切換到下一個字符
 
-    $('#findButton').on('click', function () {
-		var char = prompt(fdrawer.findMsg);
-		if (!char) return; // 如果沒有輸入字符，則不進行任何操作
-		char = char.trim(); // 去除前後空白
-		if (char.length === 0) return;
 
-		var breakFlag = false;
-		for (let i in glyphList) {
-			for (let j in glyphList[i]) {
-				if (glyphMap[glyphList[i][j]].c == char) {
-					nowList = glyphList[i];
-					$listSelect.val(i); 	// 更新下拉選單的值
-					setGlyph(j*1);
-					breakFlag = true;
-					break;
-				}
-			}
-			if (breakFlag) break;
-		}
 
-		// 找不到的話詢問要不要新增這個字
-		if (!breakFlag) {
-			if (char.length == (char.codePointAt(0) < 65536 ? 1 : 2)) {
-				if (confirm(fdrawer.notFound + '\n' + fdrawer.confirmAdd)) {
-					var uni = char.codePointAt(0).toString(16).toUpperCase();
-					var gn = uni.length <= 4 ? 'uni' + uni.padStart(4, '0') : 'u' + uni; // 生成 Unicode 名稱
-					var chr = String.fromCodePoint(char.codePointAt(0));
-	
-					if (!glyphList[fdrawer.customList]) {
-						glyphList[fdrawer.customList] = [];
-						initListSelect($listSelect); // 重新初始化下拉選單
-					}
-					glyphList[fdrawer.customList].push(gn); // 將新字符添加到自定義列表
-					glyphMap[gn] = {c: chr, w :'F'};	// 將自定義文字添加到映射中
-					updateSetting('customGlyphs', glyphList[fdrawer.customList].join(',')); // 儲存自定義字符
-	
-					nowList = glyphList[fdrawer.customList];
-					$listSelect.val(fdrawer.customList); 	// 更新下拉選單的值
-					setGlyph(glyphList[fdrawer.customList].length-1);
-				}
-			} else {
-				alert(fdrawer.notFound);
-			}
-		}
-    });
 
-    // 更新筆寬
-    $('#lineWidthSlider').on('input', function () {
-        settings.lineWidth = parseInt($(this).val(), 10);
-    	$('#lineWidthValue').text(settings.lineWidth);
-        updateSetting('lineWidth'); // 儲存筆寬到 Local Storage
-    });
-
-	// 切換筆刷
-	$('#brushSelector').on('click', function () {
-		settings.brushType++;
-		if (settings.brushType >= brushes.length) settings.brushType = 0;
-
-		updateSetting('brushType'); // 儲存筆刷類型
-		$('#brushSelector').empty().append($(brushes[settings.brushType]));
-	});
 
 	// 切換筆壓
 	$('#pressureButton').on('click', function () {
@@ -566,17 +552,6 @@ $(document).ready(async function () {
 		$('#pressureButton').removeClass('on off').addClass(settings.pressureMode ? 'on' : 'off');
 	});
 
-	// 切換畫筆與橡皮擦模式
-	$('#penButton').on('click', function () {
-		$('#penButton').addClass('use');
-		$('#eraserButton').removeClass('use');
-		eraseMode = false;
-	});
-	$('#eraserButton').on('click', function () {	
-		$('#eraserButton').addClass('use');
-		$('#penButton').removeClass('use');
-		eraseMode = true; // 切換到橡皮擦模式
-	});
 
 	let hasPointerEvent = false;	// 這個筆畫是否有pointer事件
 	let hasRealPressure = false;	// 這個筆畫是否曾經有疑似真實的筆壓值
@@ -640,9 +615,11 @@ $(document).ready(async function () {
     // 儲存背景用於筆壓繪圖的即時預覽
     let backgroundImageData = null;
 	let lastX, lastY, lastLW, isMoved = false;
-	var eraseMode = false;
 
 	function drawBrush(ctx, brush, x, y, lw) {
+		// Check if we're in light mode (default is dark mode)
+		const isLightMode = document.body.dataset.theme === 'light';
+		
 		if (userAgent.includes('macintosh') && userAgent.includes('safari') && !userAgent.includes('chrome')) {
 			// 在 Mac Safari 上使用臨時 canvas 繪製，避免直接繪圖造成污垢
 			// 不知道為什麼我的Mac-Safari直接繪圖會很髒，只好建立一個臨時的畫筆 canvas
@@ -651,12 +628,22 @@ $(document).ready(async function () {
 			brushCanvas.width = lw;
 			brushCanvas.height = lw;
 			const brushCtx = brushCanvas.getContext('2d');
+			
+			// Apply color inversion for dark mode
+			if (!isLightMode) {
+				brushCtx.filter = 'invert(1)';
+			}
 			brushCtx.drawImage(brush, 0, 0, lw, lw);
 	
 			ctx.drawImage(brushCanvas, x - lw/2, y - lw/2);
 		} else {
 			// 其他瀏覽器直接繪製
+			ctx.save();
+			if (!isLightMode) {
+				ctx.filter = 'invert(1)';
+			}
 			ctx.drawImage(brush, x - lw/2, y - lw/2, lw+1, lw+1);
+			ctx.restore();
 		}
 	}
 
@@ -689,7 +676,6 @@ $(document).ready(async function () {
 
 		} else {			// 筆刷模式
 			var lw = settings.lineWidth * pressureVal * 2; // 計算線寬
-			ctx.globalCompositeOperation = eraseMode ? "destination-out" : "source-over"; // 如果是橡皮擦模式，則使用 destination-out，否則使用 source-over
 			//if (event.type.includes('pointer'))
 			//drawBrush(ctx, brushes[settings.brushType], x*ratio, y*ratio, lw);
 
@@ -724,7 +710,7 @@ $(document).ready(async function () {
             event.preventDefault();
 
 		} else {
-            ctx.globalCompositeOperation = eraseMode ? "destination-out" : "source-over"; // 如果是橡皮擦模式，則使用 destination-out，否則使用 source-over
+            
 
 			var lw = settings.lineWidth * pressureVal * 2;
 
@@ -768,7 +754,6 @@ $(document).ready(async function () {
             backgroundImageData = null;
         } else {
 			if (!isMoved) {
-				ctx.globalCompositeOperation = eraseMode ? "destination-out" : "source-over"; // 如果是橡皮擦模式，則使用 destination-out，否則使用 source-over
 				drawBrush(ctx, brushes[settings.brushType], lastX*ratio, lastY*ratio, lastLW);
 			}
 
@@ -777,9 +762,6 @@ $(document).ready(async function () {
 			lastLW = null;
 			isMoved = false; // 重置移動狀態
         }
-
-		ctx.globalCompositeOperation = "source-over"; // 恢復正常繪圖模式(重要)
-        
         saveToLocalDB(); // 停止繪製時儲存畫布內容到 Local Storage
     });
 
@@ -836,10 +818,6 @@ $(document).ready(async function () {
 		};
 	}
 
-	$('#moveLeftButton').on('click', function () { moveGlyph(-10, 0); }); // 向左移動 10px
-	$('#moveRightButton').on('click', function () { moveGlyph(10, 0); }); // 向右移動 10px
-	$('#moveUpButton').on('click', function () { moveGlyph(0, -10); }); // 向上移動 10px
-	$('#moveDownButton').on('click', function () { moveGlyph(0, 10); }); // 向下移動 10px
 
 	// 支援鍵盤方向鍵操作
 	$(document).on('keydown', function (event) {
@@ -1116,51 +1094,134 @@ $(document).ready(async function () {
 		$('#pressureButton').toggle(!settings.oldPressureMode); 	// 如果舊筆壓繪圖啟用，則隱藏筆壓開關
 	});
 
-	// 顯示字表畫面
-    $('#canvasListButton').on('click', async function () {
-		saveToLocalDB(true); // 儲存當前畫布內容到 Local Storage		
+    // Reference implementation variables for character grid
+    let currentDeckName = "HSK 1";
+    let DECK = [];
+    let current = 0;
+    
+    // DOM elements for modal
+    const charModal = document.getElementById('listup-container');
+    const charGrid = document.getElementById('listup-body');
+    const modalTitle = document.querySelector('#listup-container .modal-header h2');
+    const modalClose = document.getElementById('closeListupButton');
+    const btnShowAll = document.getElementById('canvasListButton');
 
-        $('#listup-container').show();
-		$('#listup-body').empty(); 		// 清空
+    // Reference implementation: populateCharGrid with drawing support
+    async function populateCharGrid() {
+        if (!DECK || DECK.length === 0) return;
 
-		// 計算 viewBox
-		var scale = parseInt(settings.scaleRate, 10) / 100;
-		var emSize = Math.round(upm / scale);
-		var emOff = Math.round((upm - emSize) / 2);
-		var viewBox = `${emOff} ${emOff} ${emSize} ${emSize}`;
+        charGrid.innerHTML = '';
+        modalTitle.textContent = `${currentDeckName} Characters (${DECK.length})`;
 
-		for (let i in nowList) {
-			var gname = nowList[i];
-			var svgData = await loadFromDB('s_' + gname);
-			if (svgData) {		// 已寫過
-				$('#listup-body').append(
-					$('<svg version="1.1" viewBox="' + viewBox + '">').html('<path d="' + svgData + '" stroke="#000" fill="#000"></path>').data('index', i).on('click', function () {
-						setGlyph($(this).data('index')*1);
-						$('#listup-container').hide();
-					})
-				);
-			} else {
-				var cell = $('<span>').text(glyphMap[gname].c).data('index', i).on('click', function () {
-					setGlyph($(this).data('index')*1);
-					$('#listup-container').hide();
-				});
-				if (glyphMap[gname].v && gname.indexOf('.vert') > 0) cell.addClass('vert');
-				$('#listup-body').append(cell);
-			}
-		}
+        for (let index = 0; index < DECK.length; index++) {
+            const entry = DECK[index];
+            const charItem = document.createElement('button');
+            charItem.className = 'char-grid-item';
+            charItem.dataset.index = index;
+            
+            // Highlight current character
+            if (index === current) {
+                charItem.classList.add('current');
+            }
+            
+            // Convert character to glyph name to check for saved drawing
+            const char = entry.char;
+            const uni = char.codePointAt(0).toString(16).toUpperCase();
+            const gname = uni.length <= 4 ? 'uni' + uni.padStart(4, '0') : 'u' + uni;
+            
+            // Check if there's a saved drawing
+            const savedCanvas = await loadFromDB('g_' + gname);
+            if (savedCanvas) {
+                // Create an image element to show the drawing
+                const img = document.createElement('img');
+                img.src = savedCanvas;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                charItem.appendChild(img);
+                
+                // Add pinyin as overlay or title
+                if (entry.pinyin) {
+                    charItem.title = entry.pinyin;
+                }
+            } else {
+                // Show the character text
+                charItem.textContent = entry.char;
+            }
+            
+            charGrid.appendChild(charItem);
+        }
+    }
 
-		$('<p class="dummy"><p>').appendTo($('#listup-body'));
+    // Reference implementation: openModal
+    async function openModal() {
+        await populateCharGrid();
+        charModal.classList.remove('hidden');
+    }
+
+    // Reference implementation: closeModal
+    function closeModal() {
+        charModal.classList.add('hidden');
+    }
+
+    // Reference implementation: setEntry (equivalent to setGlyph)
+    function setEntry(i) {
+        if (!DECK || DECK.length === 0) {
+            return;
+        }
+
+        current = (i + DECK.length) % DECK.length;
+        const entry = DECK[current];
+
+        if (!entry || !entry.char) {
+            return;
+        }
+
+        // Update the original system variables
+        nowGlyphIndex = current;
+        const char = entry.char;
+        const uni = char.codePointAt(0).toString(16).toUpperCase();
+        const gname = uni.length <= 4 ? 'uni' + uni.padStart(4, '0') : 'u' + uni;
+        nowGlyph = gname;
+
+        // Update UI using original setGlyph logic
+        setGlyph(current);
+    }
+
+    // Update DECK when HSK data loads
+    function updateDeckFromHSK() {
+        const selectedDeck = $listSelect.val() || 'HSK 1';
+        currentDeckName = selectedDeck;
+        
+        if (CHARACTER_DECKS && CHARACTER_DECKS[selectedDeck]) {
+            DECK = CHARACTER_DECKS[selectedDeck];
+            current = nowGlyphIndex || 0;
+        }
+    }
+
+    // Event listeners (reference implementation)
+    btnShowAll.addEventListener('click', openModal);
+    modalClose.addEventListener('click', closeModal);
+    charModal.addEventListener('click', (e) => {
+        if (e.target === charModal) {
+            closeModal();
+        }
     });
 
-    // 關閉設定畫面
-    $('#closeListupButton').on('click', function () {
-        $('#listup-container').hide();
+    charGrid.addEventListener('click', (e) => {
+        const target = e.target.closest('.char-grid-item');
+        if (target && target.dataset.index) {
+            const charIndex = parseInt(target.dataset.index, 10);
+            setEntry(charIndex);
+            closeModal();
+        }
     });
+
 
 	// 顯示提示畫面
 	$('#hintButton').on('click', function () {
-		$('#hint-container').show();
-		$('#version').text(version);
+		showHint = !showHint;
+        initCanvas(canvas);
 	});
 
 	// 關閉提示畫面
@@ -1168,16 +1229,23 @@ $(document).ready(async function () {
 		$('#hint-container').hide();
 	});
 
-    // 顯示下載畫面
-    $('#downloadButton').on('click', async function () {
-        $('#download-container').show();
-		$('#saveAsTester').prop('checked', settings.saveAsTester); // 設定是否為測試儲存
+    // Shuffle
+    $('#btnShuffle').on('click', function() {
+        if (nowList) {
+            shuffleArray(nowList);
+            setGlyph(0);
+        }
     });
 
-    // 關閉下載畫面
-    $('#closeDownloadButton').on('click', function () {
-        $('#download-container').hide();
+    // Stroke order
+    $('#btnStroke').on('click', function() {
+        if (nowGlyph && glyphMap[nowGlyph]) {
+            const char = glyphMap[nowGlyph].c;
+            const url = `https://www.strokeorder.com/chinese/${char}`;
+            window.open(url, '_blank');
+        }
     });
+
 
 	// 關閉廣告畫面
 	$('#closeAdsButton').on('click', function () {
