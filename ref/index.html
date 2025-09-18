@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Hanzi Practice</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/png" href="favicon.png">
+</head>
+<body>
+  <header class="global-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1 class="app-title">Hanzi Practice</h1>
+        <div class="header-info">
+          <select id="deckSelector" class="deck-selector">
+            <option value="HSK 1">HSK 1</option>
+            <option value="HSK 2">HSK 2</option>
+            <option value="HSK 3">HSK 3</option>
+            <option value="HSK 4">HSK 4</option>
+            <option value="HSK 5">HSK 5</option>
+            <option value="HSK 6">HSK 6</option>
+          </select>
+        </div>
+      </div>
+      <div class="header-right">
+        <button id="btnShowAll" class="theme-toggle" title="Show all characters">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+        </button>
+        <button id="btnTheme" class="theme-toggle" title="Toggle theme">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="app">
+    <aside>
+      <div class="char-head">
+        <div class="big-char" id="bigChar">⏳</div>
+        <div class="pinyin" id="pinyin">Loading...</div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat"><div class="label">Meaning</div><div class="value" id="meaning">Loading vocabulary...</div></div>
+      </div>
+
+      <div class="btn-row">
+        <button id="btnStroke" title="Open a stroke order search" class="ghost">▶ Stroke order</button>
+        <button id="btnShuffle" class="ghost" title="Toggle shuffle order">🔀 Shuffle</button>
+        <button id="btnHint" class="ghost">💡 Hint</button>
+      </div>
+    </aside>
+
+    <main>
+      <div class="board-wrap" id="board">
+        <div class="grid-bg"></div>
+        <canvas id="bgLayer"></canvas>
+        <canvas id="drawLayer"></canvas>
+      </div>
+
+      <div class="toolbar">
+        <div class="left-tools">
+          <button id="btnUndo"> Undo</button>
+          <button id="btnClear"> Clear</button>
+        </div>
+        <div class="right-tools">
+          <button id="btnPrev">⏮ Prev </button>
+          <button id="btnNext">⏭ Next</button>
+        </div>
+      </div>
+    </main>
+  </div>
+<div id="charModal" class="char-modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle">HSK 1 Characters</h2>
+      <button id="modalClose" class="modal-close-btn">&times;</button>
+    </div>
+    <div id="charGrid" class="char-grid">
+      </div>
+  </div>
+</div>
+<script src="characters.js"></script>
+<script src="app.js"></script> </body>
+</html>
